@@ -21,7 +21,7 @@ Die solarWeb Mail und Passwort eingeben.
 
 ## Diskussion und Fragen
 
-<https://forum.iobroker.net/topic/>
+<https://forum.iobroker.net/topic/51550/test-adapter-fronius-solarweb>
 
 ## Changelog
 
