@@ -259,13 +259,9 @@ class FroniusSolarweb extends utils.Adapter {
             return;
         }
         await this.requestClient({
-            method: "post",
-            url: "https://swqapi.solarweb.com/iam/jwt",
+            method: "patch",
+            url: "https://swqapi.solarweb.com/iam/jwt/" + this.session.refreshToken,
             headers: this.baseHeader,
-            data: qs.stringify({
-                grant_type: "refresh_token",
-                refresh_token: this.session.refreshToken,
-            }),
         })
             .then((res) => {
                 this.log.debug(JSON.stringify(res.data));
