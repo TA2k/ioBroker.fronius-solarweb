@@ -185,7 +185,7 @@ class FroniusSolarweb extends utils.Adapter {
             },
             {
                 path: "weather",
-                url: "https://swqapi.solarweb.com/pvsystems/$id/weather",
+                url: "https://swqapi.solarweb.com/pvsystems/$id/weather/current",
                 desc: "Weather",
             },
             {
