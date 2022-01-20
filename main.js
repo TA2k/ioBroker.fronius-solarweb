@@ -99,7 +99,6 @@ class FroniusSolarweb extends utils.Adapter {
         })
             .then(async (res) => {
                 this.log.debug(JSON.stringify(res.data));
-
                 for (const device of res.data.pvSystems) {
                     const id = device.pvSystemId;
                     this.deviceArray.push(id);
@@ -149,8 +148,15 @@ class FroniusSolarweb extends utils.Adapter {
                     })
                         .then(async (res) => {
                             this.log.debug(JSON.stringify(res.data));
+                            await this.setObjectNotExistsAsync(id + ".devices", {
+                                type: "channel",
+                                common: {
+                                    name: "Devices",
+                                },
+                                native: {},
+                            });
                             for (const device of res.data.devices) {
-                                await this.setObjectNotExistsAsync(id + "." + device.deviceId, {
+                                await this.setObjectNotExistsAsync(id + ".devices." + device.deviceId, {
                                     type: "device",
                                     common: {
                                         name: device.deviceName,
@@ -158,7 +164,7 @@ class FroniusSolarweb extends utils.Adapter {
                                     native: {},
                                 });
 
-                                this.json2iob.parse(id + "." + device.deviceId, device);
+                                this.json2iob.parse(id + ".devices." + device.deviceId, device);
                             }
                         })
                         .catch((error) => {
@@ -224,7 +230,7 @@ class FroniusSolarweb extends utils.Adapter {
                         if (!res.data) {
                             return;
                         }
-                        const data = res.data.data;
+                        let data = res.data.data;
 
                         const forceIndex = null;
                         const preferedArrayName = "channelName";
