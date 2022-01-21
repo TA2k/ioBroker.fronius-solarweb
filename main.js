@@ -69,6 +69,7 @@ class FroniusSolarweb extends utils.Adapter {
         }
     }
     async login() {
+        delete this.baseHeader["Authorization"];
         await this.requestClient({
             method: "post",
             url: "https://swqapi.solarweb.com/iam/jwt",
