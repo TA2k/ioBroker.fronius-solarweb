@@ -23,6 +23,7 @@ class FroniusSolarweb extends utils.Adapter {
         this.on("stateChange", this.onStateChange.bind(this));
         this.on("unload", this.onUnload.bind(this));
         this.deviceArray = [];
+        this.isPro = true;
         this.json2iob = new Json2iob(this);
         this.baseHeader = {
             "Content-Type": "application/json-patch+json",
@@ -195,6 +196,7 @@ class FroniusSolarweb extends utils.Adapter {
                 url: "https://swqapi.solarweb.com/pvsystems/$id/weather/current",
                 desc: "Weather",
             },
+
             {
                 path: "total",
                 url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata",
@@ -216,6 +218,13 @@ class FroniusSolarweb extends utils.Adapter {
                 desc: "AggData day",
             },
         ];
+        if (this.isPro) {
+            statusArray.push({
+                path: "energyforecast",
+                url: "https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast",
+                desc: "Energy Forecast",
+            });
+        }
 
         for (const id of this.deviceArray) {
             for (const element of statusArray) {
@@ -240,6 +249,13 @@ class FroniusSolarweb extends utils.Adapter {
                     })
                     .catch((error) => {
                         if (error.response) {
+                            if (error.response.status === 403) {
+                                this.isPro = false;
+                                this.log.info("Disable Pro Endpoints");
+
+                                error.response && this.log.info(JSON.stringify(error.response.data));
+                                return;
+                            }
                             if (error.response.status === 401) {
                                 error.response && this.log.debug(JSON.stringify(error.response.data));
                                 this.log.info(element.path + " receive 401 error. Refresh Token in 60 seconds");
