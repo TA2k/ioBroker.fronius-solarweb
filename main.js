@@ -185,11 +185,17 @@ class FroniusSolarweb extends utils.Adapter {
         const year = new Date().getFullYear();
         const month = new Date().getMonth() + 1;
         const day = new Date().getDate();
+        const toDate = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
         const statusArray = [
             {
                 path: "flowdata",
                 url: "https://swqapi.solarweb.com/pvsystems/$id/flowdata",
                 desc: "Flowdata",
+            },
+            {
+                path: "histdata",
+                url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + Date.now() + "&to=" + toDate.getTime(),
+                desc: "Historical Data",
             },
             {
                 path: "weather",
@@ -221,7 +227,7 @@ class FroniusSolarweb extends utils.Adapter {
         if (this.isPro) {
             statusArray.push({
                 path: "energyforecast",
-                url: "https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast",
+                url: "https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=" + Date.now() + "&to=" + toDate.getTime(),
                 desc: "Energy Forecast",
             });
         }
