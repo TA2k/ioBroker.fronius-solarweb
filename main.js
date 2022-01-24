@@ -196,6 +196,7 @@ class FroniusSolarweb extends utils.Adapter {
                 path: "histdata",
                 url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + Date.now() + "&to=" + toDate.getTime(),
                 desc: "Historical Data",
+                forceIndex: true,
             },
             {
                 path: "weather",
@@ -229,6 +230,7 @@ class FroniusSolarweb extends utils.Adapter {
                 path: "energyforecast",
                 url: "https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=" + Date.now() + "&to=" + toDate.getTime(),
                 desc: "Energy Forecast",
+                forceIndex: true,
             });
         }
 
@@ -246,9 +248,9 @@ class FroniusSolarweb extends utils.Adapter {
                         if (!res.data) {
                             return;
                         }
-                        let data = res.data.data;
+                        const data = res.data.data;
 
-                        const forceIndex = null;
+                        const forceIndex = element.forceIndex;
                         const preferedArrayName = "channelName";
 
                         this.json2iob.parse(id + "." + element.path, data, { forceIndex: forceIndex, preferedArrayName: preferedArrayName, channelName: element.desc });
