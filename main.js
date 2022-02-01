@@ -129,7 +129,7 @@ class FroniusSolarweb extends utils.Adapter {
 
                     const remoteArray = [{ command: "Refresh", name: "True = Refresh" }];
                     remoteArray.forEach((remote) => {
-                        this.setObjectNotExists(device.vin + ".remote." + remote.command, {
+                        this.setObjectNotExists(id + ".remote." + remote.command, {
                             type: "state",
                             common: {
                                 name: remote.name || "",
@@ -185,7 +185,7 @@ class FroniusSolarweb extends utils.Adapter {
         const year = new Date().getFullYear();
         const month = new Date().getMonth() + 1;
         const day = new Date().getDate();
-        const toDate = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
+        const toDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
         const statusArray = [
             {
                 path: "flowdata",
