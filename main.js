@@ -194,7 +194,7 @@ class FroniusSolarweb extends utils.Adapter {
             },
             {
                 path: "histdata",
-                url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + Date.now() + "&to=" + toDate.getTime(),
+                url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + toDate.getTime() + "&to=" + Date.now(),
                 desc: "Historical Data",
                 forceIndex: true,
             },
