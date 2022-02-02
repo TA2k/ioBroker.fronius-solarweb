@@ -196,7 +196,7 @@ class FroniusSolarweb extends utils.Adapter {
                 path: "histdata",
                 url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + toDate.getTime() + "&to=" + Date.now(),
                 desc: "Historical Data",
-                forceIndex: true,
+                forceIndex: false,
             },
             {
                 path: "weather",
@@ -228,7 +228,7 @@ class FroniusSolarweb extends utils.Adapter {
         if (this.isPro) {
             statusArray.push({
                 path: "energyforecast",
-                url: "https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=" + Date.now() + "&to=" + toDate.getTime(),
+                url: "https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=" + toDate.getTime() + "&to=" + Date.now(),
                 desc: "Energy Forecast",
                 forceIndex: true,
             });
