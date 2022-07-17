@@ -191,42 +191,42 @@ class FroniusSolarweb extends utils.Adapter {
     const day = new Date().getDate();
     const toDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
     const statusArray = [
-      //   {
-      //     path: "flowdata",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/flowdata",
-      //     desc: "Flowdata",
-      //   },
-      //   {
-      //     path: "histdata",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + toDate.getTime() + "&to=" + Date.now(),
-      //     desc: "Historical Data",
-      //     forceIndex: true,
-      //   },
-      //   {
-      //     path: "weather",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/weather/current",
-      //     desc: "Weather",
-      //   },
-      //   {
-      //     path: "total",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata",
-      //     desc: "AggData Total",
-      //   },
-      //   {
-      //     path: "year",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/" + year,
-      //     desc: "AggData Year",
-      //   },
-      //   {
-      //     path: "month",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/" + year + "/months/" + month,
-      //     desc: "AggData Month",
-      //   },
-      //   {
-      //     path: "day",
-      //     url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/" + year + "/months/" + month + "/days/" + day,
-      //     desc: "AggData day",
-      //   },
+      {
+        path: "flowdata",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/flowdata",
+        desc: "Flowdata",
+      },
+      {
+        path: "histdata",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/histdata?from=" + toDate.getTime() + "&to=" + Date.now(),
+        desc: "Historical Data",
+        forceIndex: true,
+      },
+      {
+        path: "weather",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/weather/current",
+        desc: "Weather",
+      },
+      {
+        path: "total",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata",
+        desc: "AggData Total",
+      },
+      {
+        path: "year",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/" + year,
+        desc: "AggData Year",
+      },
+      {
+        path: "month",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/" + year + "/months/" + month,
+        desc: "AggData Month",
+      },
+      {
+        path: "day",
+        url: "https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/" + year + "/months/" + month + "/days/" + day,
+        desc: "AggData day",
+      },
     ];
     if (this.ohmePilot) {
       statusArray.push({
