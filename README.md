@@ -1,4 +1,5 @@
 ![Logo](admin/fronius-solarweb.png)
+
 # ioBroker.fronius-solarweb
 
 [![NPM version](https://img.shields.io/npm/v/iobroker.fronius-solarweb.svg)](https://www.npmjs.com/package/iobroker.fronius-solarweb)
@@ -25,10 +26,16 @@ Die solarWeb Mail und Passwort eingeben.
 
 ## Changelog
 
+### 0.0.2
+
+- (TA2k) add ohmpilot flowdata
+
 ### 0.0.1
-* (TA2k) initial release
+
+- (TA2k) initial release
 
 ## License
+
 MIT License
 
 Copyright (c) 2022 TA2k <tombox2020@gmail.com>
