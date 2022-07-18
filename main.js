@@ -186,10 +186,11 @@ class FroniusSolarweb extends utils.Adapter {
   }
 
   async updateDevices() {
-    const year = new Date().getFullYear();
-    const month = new Date().getMonth() + 1;
-    const day = new Date().getDate();
-    const toDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const toDate = new Date(date.getTime() + 5000 - 24 * 60 * 60 * 1000);
     const statusArray = [
       {
         path: "flowdata",
