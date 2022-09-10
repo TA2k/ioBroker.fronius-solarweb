@@ -1,8 +1,11 @@
 {
   "common": {
     "name": "fronius-solarweb",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "news": {
+      "0.0.3": {
+        "en": "bugfixes"
+      },
       "0.0.2": {
         "en": "add ohmpilot flowdata"
       },
