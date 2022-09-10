@@ -26,7 +26,7 @@ Die solarWeb Mail und Passwort eingeben.
 
 ## Changelog
 
-### 0.0.2
+### 0.0.3
 
 - (TA2k) add ohmpilot flowdata
 
