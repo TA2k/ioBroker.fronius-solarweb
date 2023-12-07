@@ -8,7 +8,7 @@
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
 const axios = require('axios');
-const Json2iob = require('./lib/json2iob');
+const Json2iob = require('json2iob');
 
 class FroniusSolarweb extends utils.Adapter {
   /**
@@ -34,6 +34,13 @@ class FroniusSolarweb extends utils.Adapter {
       'Accept-Language': 'de-de',
       'User-Agent': 'Solar.web/921 CFNetwork/1410.0.3 Darwin/22.6.0',
     };
+
+    this.requestClient = axios.create();
+
+    this.updateInterval = null;
+    this.reLoginTimeout = null;
+    this.refreshTokenTimeout = null;
+    this.session = {};
   }
 
   /**
@@ -50,12 +57,7 @@ class FroniusSolarweb extends utils.Adapter {
       this.log.error('Please set username and password in the instance settings');
       return;
     }
-    this.requestClient = axios.create();
 
-    this.updateInterval = null;
-    this.reLoginTimeout = null;
-    this.refreshTokenTimeout = null;
-    this.session = {};
     this.subscribeStates('*');
 
     await this.login();
