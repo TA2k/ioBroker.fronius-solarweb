@@ -270,7 +270,7 @@ class FroniusSolarweb extends utils.Adapter {
             Authorization: 'Bearer ' + this.session.jwtToken,
           },
         })
-          .then((res) => {
+          .then(async (res) => {
             this.log.debug(JSON.stringify(res.data));
             if (!res.data) {
               return;
@@ -280,7 +280,7 @@ class FroniusSolarweb extends utils.Adapter {
             const forceIndex = element.forceIndex;
             const preferedArrayName = 'channelName';
 
-            this.json2iob.parse(id + '.' + element.path, data, {
+            await this.json2iob.parse(id + '.' + element.path, data, {
               forceIndex: forceIndex,
               preferedArrayName: preferedArrayName,
               channelName: element.desc,
