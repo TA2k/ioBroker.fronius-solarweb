@@ -7,7 +7,7 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
-const axios = require('axios').default;
+const axios = require('axios');
 const Json2iob = require('json2iob');
 
 class FroniusSolarweb extends utils.Adapter {
@@ -26,16 +26,15 @@ class FroniusSolarweb extends utils.Adapter {
     this.ohmePilot = '';
     this.isPro = true;
     this.json2iob = new Json2iob(this);
-    this.baseHeader = {
-      'Content-Type': 'application/json-patch+json',
-      AccessKeyId: 'FKIA6A4A867043A1455B8A24FA56AACC74FF',
-      AccessKeyValue: '08cadf3b-9052-47f0-9a9e-5349e19f6311',
-      Accept: 'application/json',
-      'Accept-Language': 'de-de',
-      'User-Agent': 'Solar.web/921 CFNetwork/1410.0.3 Darwin/22.6.0',
-    };
 
-    this.requestClient = axios.create();
+    this.requestClient = axios.create({
+      headers: {
+        accesskeyid: 'FKIAB4CDA71C0763413DA942DC756742318B',
+        accesskeyvalue: '67315e19-6805-479e-994d-7193ee5f6125',
+        'content-type': 'application/json; charset=UTF-8',
+        'user-agent': 'okhttp/4.12.0',
+      },
+    });
 
     this.updateInterval = null;
     this.reLoginTimeout = null;
@@ -74,11 +73,10 @@ class FroniusSolarweb extends utils.Adapter {
     }
   }
   async login() {
-    delete this.baseHeader['Authorization'];
     await this.requestClient({
       method: 'post',
-      url: 'https://swqapi.solarweb.com/iam/jwt',
-      headers: this.baseHeader,
+      url: 'https://swqapi.solarweb.com/iam/jwt?scope=b454e75844',
+
       data: JSON.stringify({
         userId: this.config.username,
         password: this.config.password,
@@ -87,7 +85,6 @@ class FroniusSolarweb extends utils.Adapter {
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
         this.session = res.data;
-        this.baseHeader['Authorization'] = 'Bearer ' + this.session.jwtToken;
         this.setState('info.connection', true, true);
       })
       .catch((error) => {
@@ -101,7 +98,9 @@ class FroniusSolarweb extends utils.Adapter {
     await this.requestClient({
       method: 'get',
       url: 'https://swqapi.solarweb.com/pvsystems?offset=0&limit=1000',
-      headers: this.baseHeader,
+      headers: {
+        Authorization: 'Bearer ' + this.session.jwtToken,
+      },
     })
       .then(async (res) => {
         this.log.debug(JSON.stringify(res.data));
@@ -133,7 +132,7 @@ class FroniusSolarweb extends utils.Adapter {
 
           const remoteArray = [{ command: 'Refresh', name: 'True = Refresh' }];
           remoteArray.forEach((remote) => {
-            this.setObjectNotExists(id + '.remote.' + remote.command, {
+            this.extendObject(id + '.remote.' + remote.command, {
               type: 'state',
               common: {
                 name: remote.name || '',
@@ -150,7 +149,9 @@ class FroniusSolarweb extends utils.Adapter {
           await this.requestClient({
             method: 'get',
             url: 'https://swqapi.solarweb.com/pvsystems/' + id + '/devices',
-            headers: this.baseHeader,
+            headers: {
+              Authorization: 'Bearer ' + this.session.jwtToken,
+            },
           })
             .then(async (res) => {
               this.log.debug(JSON.stringify(res.data));
@@ -212,6 +213,16 @@ class FroniusSolarweb extends utils.Adapter {
         desc: 'Weather',
       },
       {
+        path: 'livedata',
+        url: 'https://swqapi.solarweb.com/pvsystems/$id/livedata',
+        desc: 'Live Data',
+      },
+      {
+        path: 'efmstate',
+        url: 'https://swqapi.solarweb.com/pvsystems/$id/efmstate',
+        desc: 'EFM State',
+      },
+      {
         path: 'total',
         url: 'https://swqapi.solarweb.com/pvsystems/$id/aggdata',
         desc: 'AggData Total',
@@ -255,7 +266,9 @@ class FroniusSolarweb extends utils.Adapter {
         await this.requestClient({
           method: 'get',
           url: url,
-          headers: this.baseHeader,
+          headers: {
+            Authorization: 'Bearer ' + this.session.jwtToken,
+          },
         })
           .then((res) => {
             this.log.debug(JSON.stringify(res.data));
@@ -309,13 +322,11 @@ class FroniusSolarweb extends utils.Adapter {
     }
     await this.requestClient({
       method: 'patch',
-      url: 'https://swqapi.solarweb.com/iam/jwt/' + this.session.refreshToken,
-      headers: this.baseHeader,
+      url: 'https://swqapi.solarweb.com/iam/jwt/' + this.session.refreshToken + '?scope=b454e75844',
     })
       .then((res) => {
         this.log.debug(JSON.stringify(res.data));
         this.session = res.data;
-        this.baseHeader['Authorization'] = 'Bearer ' + this.session.jwtToken;
         this.setState('info.connection', true, true);
       })
       .catch((error) => {
