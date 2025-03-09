@@ -69,7 +69,7 @@ class FroniusSolarweb extends utils.Adapter {
       }, this.config.interval * 60 * 1000);
       this.refreshTokenInterval = setInterval(() => {
         this.refreshToken();
-      }, 3500 * 1000);
+      }, 3432 * 1000);
     }
   }
   async login() {
@@ -357,6 +357,7 @@ class FroniusSolarweb extends utils.Adapter {
       this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
       callback();
     } catch (e) {
+      this.log.error('Error onUnload: ' + e);
       callback();
     }
   }
