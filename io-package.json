@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-solarweb",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
+      "0.1.1": {
+        "en": "fix for login flow",
+        "de": "fix für login-flow",
+        "ru": "фиксация потока login",
+        "pt": "correção para o fluxo de login",
+        "nl": "fix voor inlogstroom",
+        "fr": "correction du flux de connexion",
+        "it": "correzione del flusso di login",
+        "es": "fijado para el flujo de inicio de sesión",
+        "pl": "fix for login flow",
+        "uk": "виправлення для потоку логіна",
+        "zh-cn": "登录流量的固定"
+      },
       "0.1.0": {
         "en": "Fix Login",
         "de": "Login Fix"
@@ -50,8 +63,13 @@
       "pl": "Adapter do portalu Fronius Solarweb",
       "zh-cn": "Fronius Solarweb Portal 适配器"
     },
-    "authors": ["TA2k <tombox2020@gmail.com>"],
-    "keywords": ["fronius", "solarweb"],
+    "authors": [
+      "TA2k <tombox2020@gmail.com>"
+    ],
+    "keywords": [
+      "fronius",
+      "solarweb"
+    ],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -82,8 +100,12 @@
       }
     ]
   },
-  "encryptedNative": ["password"],
-  "protectedNative": ["password"],
+  "encryptedNative": [
+    "password"
+  ],
+  "protectedNative": [
+    "password"
+  ],
   "native": {
     "username": "",
     "password": "",

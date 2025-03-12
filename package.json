@@ -1,6 +1,6 @@
 {
   "name": "iobroker.fronius-solarweb",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Adapter for Fronius Solarweb Portal",
   "author": {
     "name": "TA2k",
@@ -22,11 +22,14 @@
     "json2iob": "^2.6.17"
   },
   "devDependencies": {
+    "@alcalzone/release-script": "^3.8.0",
+    "@alcalzone/release-script-plugin-iobroker": "^3.7.2",
+    "@alcalzone/release-script-plugin-license": "^3.7.0",
+    "@alcalzone/release-script-plugin-manual-review": "^3.7.0",
     "@eslint/eslintrc": "^3.3.0",
     "@eslint/js": "^9.21.0",
     "@iobroker/testing": "^5.0.3",
     "@types/node": "^22.13.9",
-    "chai-as-promised": "^8.0.1",
     "eslint": "^9.21.0",
     "globals": "^16.0.0",
     "typescript": "~5.8.2"
@@ -48,7 +51,8 @@
     "test:integration": "mocha test/integration --exit",
     "test": "npm run test:js && npm run test:package",
     "check": "tsc --noEmit -p tsconfig.check.json",
-    "lint": "eslint"
+    "lint": "eslint",
+    "release": "release-script --all"
   },
   "bugs": {
     "url": "https://github.com/TA2k/ioBroker.fronius-solarweb/issues"
