@@ -78,6 +78,7 @@
     "extIcon": "https://raw.githubusercontent.com/TA2k/ioBroker.fronius-solarweb/master/admin/fronius-solarweb.png",
     "readme": "https://github.com/TA2k/ioBroker.fronius-solarweb/blob/master/README.md",
     "loglevel": "info",
+    "tier": 2,
     "mode": "daemon",
     "type": "energy",
     "compact": true,
