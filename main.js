@@ -9,6 +9,7 @@
 const utils = require('@iobroker/adapter-core');
 const axios = require('axios');
 const Json2iob = require('json2iob');
+const { getQueryTimeRanges } = require('./lib/queryTimeRanges');
 
 class FroniusSolarweb extends utils.Adapter {
   /**
@@ -194,7 +195,7 @@ class FroniusSolarweb extends utils.Adapter {
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const toDate = new Date(date.getTime() + 5000 - 24 * 60 * 60 * 1000);
+    const queryRanges = getQueryTimeRanges(date);
     const statusArray = [
       {
         path: 'flowdata',
@@ -203,7 +204,11 @@ class FroniusSolarweb extends utils.Adapter {
       },
       {
         path: 'histdata',
-        url: 'https://swqapi.solarweb.com/pvsystems/$id/histdata?from=' + toDate.getTime() + '&to=' + Date.now(),
+        url:
+          'https://swqapi.solarweb.com/pvsystems/$id/histdata?from=' +
+          queryRanges.historyFrom +
+          '&to=' +
+          queryRanges.now,
         desc: 'Historical Data',
         forceIndex: true,
       },
@@ -253,8 +258,22 @@ class FroniusSolarweb extends utils.Adapter {
     if (this.isPro) {
       statusArray.push({
         path: 'energyforecast',
-        url: 'https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=' + toDate.getTime() + '&to=' + Date.now(),
-        desc: 'Energy Forecast',
+        url:
+          'https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=' +
+          queryRanges.forecastTodayFrom +
+          '&to=' +
+          queryRanges.forecastTodayTo,
+        desc: 'Energy Forecast Today',
+        forceIndex: true,
+      });
+      statusArray.push({
+        path: 'energyforecastTomorrow',
+        url:
+          'https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=' +
+          queryRanges.forecastTomorrowFrom +
+          '&to=' +
+          queryRanges.forecastTomorrowTo,
+        desc: 'Energy Forecast Tomorrow',
         forceIndex: true,
       });
     }

@@ -1,29 +1,30 @@
 'use strict';
 
-/**
- * This is a dummy TypeScript test file using chai and mocha
- *
- * It's automatically excluded from npm and its build output is excluded from both git and npm.
- * It is advised to test all your modules with accompanying *.test.js-files
- */
+const assert = require('assert');
+const { getQueryTimeRanges } = require('./lib/queryTimeRanges');
 
-// tslint:disable:no-unused-expression
+describe('Solar.web query time ranges', () => {
+  it('uses the past 24 hours for historical data', () => {
+    const now = new Date('2026-05-13T10:00:00.000Z');
+    const ranges = getQueryTimeRanges(now);
 
-const { expect } = require('chai');
-// import { functionToTest } from "./moduleToTest";
-
-describe('module to test => function to test', () => {
-  // initializing logic
-  const expected = 5;
-
-  it(`should return ${expected}`, () => {
-    const result = 5;
-    // assign result a value from functionToTest
-    expect(result).to.equal(expected);
-    // or using the should() syntax
-    result.should.equal(expected);
+    assert.equal(ranges.now, now.getTime());
+    assert.equal(ranges.historyFrom, now.getTime() + 5000 - 24 * 60 * 60 * 1000);
+    assert.ok(ranges.historyFrom < ranges.now);
   });
-  // ... more tests => it
-});
 
-// ... more test suites => describe
+  it('uses separate local calendar-day windows for today and tomorrow forecasts', () => {
+    const now = new Date('2026-05-13T10:00:00.000Z');
+    const ranges = getQueryTimeRanges(now);
+
+    const expectedTodayStart = new Date(now);
+    expectedTodayStart.setHours(0, 0, 0, 0);
+    const expectedTomorrowStart = new Date(expectedTodayStart);
+    expectedTomorrowStart.setDate(expectedTomorrowStart.getDate() + 1);
+
+    assert.equal(ranges.forecastTodayFrom, expectedTodayStart.getTime());
+    assert.equal(ranges.forecastTodayTo, expectedTodayStart.getTime() + 24 * 60 * 60 * 1000);
+    assert.equal(ranges.forecastTomorrowFrom, expectedTomorrowStart.getTime());
+    assert.equal(ranges.forecastTomorrowTo, expectedTomorrowStart.getTime() + 24 * 60 * 60 * 1000);
+  });
+});
