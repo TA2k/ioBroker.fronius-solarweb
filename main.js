@@ -269,6 +269,7 @@ class FroniusSolarweb extends utils.Adapter {
         forceIndex: true,
         deleteBeforeUpdate: true,
         summaryState: 'todayWh',
+        remainingState: 'todayRemainingWh',
       });
       statusArray.push({
         path: 'energyforecastTomorrow',
@@ -312,11 +313,18 @@ class FroniusSolarweb extends utils.Adapter {
 
             if (element.summaryState && Array.isArray(data)) {
               let sum = 0;
+              let remaining = 0;
+              const now = new Date();
               for (const entry of data) {
-                if (Array.isArray(entry.channels)) {
-                  for (const ch of entry.channels) {
-                    if (ch.channelName === 'EnergyExpected' && typeof ch.value === 'number') {
-                      sum += ch.value;
+                if (!Array.isArray(entry.channels)) continue;
+                for (const ch of entry.channels) {
+                  if (ch.channelName !== 'EnergyExpected' || typeof ch.value !== 'number') continue;
+                  sum += ch.value;
+                  if (element.remainingState && entry.logDateTime) {
+                    const slotEnd = new Date(entry.logDateTime);
+                    slotEnd.setSeconds(slotEnd.getSeconds() + (entry.logDuration || 0));
+                    if (slotEnd > now) {
+                      remaining += ch.value;
                     }
                   }
                 }
@@ -334,6 +342,21 @@ class FroniusSolarweb extends utils.Adapter {
                 native: {},
               });
               await this.setStateAsync(id + '.' + element.summaryState, Math.round(sum), true);
+              if (element.remainingState) {
+                await this.setObjectNotExistsAsync(id + '.' + element.remainingState, {
+                  type: 'state',
+                  common: {
+                    name: element.desc + ' Remaining',
+                    type: 'number',
+                    role: 'value.energy',
+                    unit: 'Wh',
+                    read: true,
+                    write: false,
+                  },
+                  native: {},
+                });
+                await this.setStateAsync(id + '.' + element.remainingState, Math.round(remaining), true);
+              }
             }
           })
           .catch((error) => {
