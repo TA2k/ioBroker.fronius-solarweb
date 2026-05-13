@@ -10,6 +10,13 @@ const utils = require('@iobroker/adapter-core');
 const axios = require('axios');
 const Json2iob = require('json2iob');
 const { getQueryTimeRanges } = require('./lib/queryTimeRanges');
+const {
+  calculateTodayRemainingFromSlots,
+  formatLocalDate,
+  getForecastRowValidityUpdates,
+  getLocalDayStart,
+  normalizeEnergyForecast,
+} = require('./lib/energyForecast');
 
 class FroniusSolarweb extends utils.Adapter {
   /**
@@ -40,6 +47,7 @@ class FroniusSolarweb extends utils.Adapter {
     this.updateInterval = null;
     this.reLoginTimeout = null;
     this.refreshTokenTimeout = null;
+    this.remainingForecastInterval = null;
     this.session = {};
   }
 
@@ -71,6 +79,9 @@ class FroniusSolarweb extends utils.Adapter {
       this.refreshTokenInterval = setInterval(() => {
         this.refreshToken();
       }, 3432 * 1000);
+      this.remainingForecastInterval = setInterval(() => {
+        this.updateEnergyForecastRemainingSummaries();
+      }, 60 * 1000);
     }
   }
   async login() {
@@ -267,9 +278,6 @@ class FroniusSolarweb extends utils.Adapter {
           '&timezone=local',
         desc: 'Energy Forecast Today',
         forceIndex: true,
-        deleteBeforeUpdate: true,
-        summaryState: 'todayWh',
-        remainingState: 'todayRemainingWh',
       });
       statusArray.push({
         path: 'energyforecastTomorrow',
@@ -281,12 +289,11 @@ class FroniusSolarweb extends utils.Adapter {
           '&timezone=local',
         desc: 'Energy Forecast Tomorrow',
         forceIndex: true,
-        deleteBeforeUpdate: true,
-        summaryState: 'tomorrowWh',
       });
     }
 
     for (const id of this.deviceArray) {
+      const energyForecastResponses = {};
       for (const element of statusArray) {
         const url = element.url.replace('$id', id);
 
@@ -303,60 +310,20 @@ class FroniusSolarweb extends utils.Adapter {
               return;
             }
             const data = res.data.data;
+            const isEnergyForecast = element.path === 'energyforecast' || element.path === 'energyforecastTomorrow';
+
+            if (isEnergyForecast) {
+              energyForecastResponses[element.path] = Array.isArray(data) ? data : [];
+            }
 
             await this.json2iob.parse(id + '.' + element.path, data, {
               forceIndex: element.forceIndex,
               preferedArrayName: 'channelName',
               channelName: element.desc,
-              deleteBeforeUpdate: element.deleteBeforeUpdate,
             });
 
-            if (element.summaryState && Array.isArray(data)) {
-              let sum = 0;
-              let remaining = 0;
-              const now = new Date();
-              for (const entry of data) {
-                if (!Array.isArray(entry.channels)) continue;
-                for (const ch of entry.channels) {
-                  if (ch.channelName !== 'EnergyExpected' || typeof ch.value !== 'number') continue;
-                  sum += ch.value;
-                  if (element.remainingState && entry.logDateTime) {
-                    const slotEnd = new Date(entry.logDateTime);
-                    slotEnd.setSeconds(slotEnd.getSeconds() + (entry.logDuration || 0));
-                    if (slotEnd > now) {
-                      remaining += ch.value;
-                    }
-                  }
-                }
-              }
-              await this.setObjectNotExistsAsync(id + '.' + element.summaryState, {
-                type: 'state',
-                common: {
-                  name: element.desc + ' Total',
-                  type: 'number',
-                  role: 'value.energy',
-                  unit: 'Wh',
-                  read: true,
-                  write: false,
-                },
-                native: {},
-              });
-              await this.setStateAsync(id + '.' + element.summaryState, Math.round(sum), true);
-              if (element.remainingState) {
-                await this.setObjectNotExistsAsync(id + '.' + element.remainingState, {
-                  type: 'state',
-                  common: {
-                    name: element.desc + ' Remaining',
-                    type: 'number',
-                    role: 'value.energy',
-                    unit: 'Wh',
-                    read: true,
-                    write: false,
-                  },
-                  native: {},
-                });
-                await this.setStateAsync(id + '.' + element.remainingState, Math.round(remaining), true);
-              }
+            if (isEnergyForecast) {
+              await this.updateIndexedForecastValidityMetadata(id, element.path, Array.isArray(data) ? data.length : 0);
             }
           })
           .catch((error) => {
@@ -385,8 +352,177 @@ class FroniusSolarweb extends utils.Adapter {
             error.response && this.log.error(JSON.stringify(error.response.data));
           });
       }
+
+      if (energyForecastResponses.energyforecast || energyForecastResponses.energyforecastTomorrow) {
+        await this.writeNormalizedEnergyForecast(
+          id,
+          energyForecastResponses.energyforecast || [],
+          energyForecastResponses.energyforecastTomorrow || [],
+        );
+      }
     }
   }
+
+  async updateIndexedForecastValidityMetadata(deviceId, forecastPath, currentLength) {
+    const basePath = `${deviceId}.${forecastPath}`;
+    const fullBasePath = `${this.namespace}.${basePath}`;
+    try {
+      const objects = await this.getObjectListAsync({
+        startkey: `${fullBasePath}.`,
+        endkey: `${fullBasePath}.\u9999`,
+      });
+      const objectIds = (objects && objects.rows ? objects.rows : [])
+        .map((row) => row.id || (row.value && row.value._id))
+        .filter(Boolean);
+      const updates = getForecastRowValidityUpdates(objectIds, basePath, this.namespace, currentLength);
+      const timestamp = new Date().toISOString();
+
+      for (const update of updates) {
+        await this.setBooleanStateObject(`${update.root}.valid`, 'Forecast row is part of the latest response', update.valid);
+        await this.setBooleanStateObject(`${update.root}.stale`, 'Forecast row is stale', !update.valid);
+        if (update.valid) {
+          await this.setStringStateObject(`${update.root}.lastSeenInResponseAt`, 'Forecast row last seen in response at', timestamp);
+          await this.setStringStateObject(`${update.root}.staleSince`, 'Forecast row stale since', '');
+        } else {
+          const staleSinceState = await this.getStateAsync(`${update.root}.staleSince`);
+          if (!staleSinceState || !staleSinceState.val) {
+            await this.setStringStateObject(`${update.root}.staleSince`, 'Forecast row stale since', timestamp);
+          }
+        }
+      }
+    } catch (error) {
+      this.log.warn(`Could not update ${forecastPath} row metadata: ${error && error.message ? error.message : error}`);
+    }
+  }
+
+  async ensureChannelObject(id, name) {
+    await this.extendObjectAsync(id, {
+      type: 'channel',
+      common: {
+        name,
+      },
+      native: {},
+    });
+  }
+
+  async setNumberStateObject(id, name, value, unit = '', role = 'value') {
+    await this.extendObjectAsync(id, {
+      type: 'state',
+      common: {
+        name,
+        type: 'number',
+        role,
+        unit,
+        write: false,
+        read: true,
+      },
+      native: {},
+    });
+    await this.setStateAsync(id, value, true);
+  }
+
+  async setBooleanStateObject(id, name, value) {
+    await this.extendObjectAsync(id, {
+      type: 'state',
+      common: {
+        name,
+        type: 'boolean',
+        role: 'indicator',
+        write: false,
+        read: true,
+      },
+      native: {},
+    });
+    await this.setStateAsync(id, value, true);
+  }
+
+  async setStringStateObject(id, name, value) {
+    await this.extendObjectAsync(id, {
+      type: 'state',
+      common: {
+        name,
+        type: 'string',
+        role: 'text',
+        write: false,
+        read: true,
+      },
+      native: {},
+    });
+    await this.setStateAsync(id, value, true);
+  }
+
+  async writeNormalizedEnergyForecast(deviceId, todayRecords, tomorrowRecords) {
+    const normalized = normalizeEnergyForecast(todayRecords, tomorrowRecords, new Date());
+
+    await this.setNumberStateObject(`${deviceId}.todayWh`, 'Energy Forecast Today Total', Math.round(normalized.summary.todayWh), 'Wh', 'value.energy');
+    await this.setNumberStateObject(
+      `${deviceId}.todayRemainingWh`,
+      'Energy Forecast Today Remaining',
+      Math.round(normalized.summary.todayRemainingWh),
+      'Wh',
+      'value.energy',
+    );
+    await this.setNumberStateObject(`${deviceId}.tomorrowWh`, 'Energy Forecast Tomorrow Total', Math.round(normalized.summary.tomorrowWh), 'Wh', 'value.energy');
+
+    await this.ensureChannelObject(`${deviceId}.energyforecastSummary`, 'Energy Forecast Summary');
+    await this.setStringStateObject(`${deviceId}.energyforecastSummary.todayDate`, 'Forecast today date', normalized.todayDate);
+    await this.setStringStateObject(`${deviceId}.energyforecastSummary.tomorrowDate`, 'Forecast tomorrow date', normalized.tomorrowDate);
+    await this.setNumberStateObject(`${deviceId}.energyforecastSummary.todayWh`, 'Forecast today', normalized.summary.todayWh, 'Wh', 'value.energy');
+    await this.setNumberStateObject(`${deviceId}.energyforecastSummary.todayRemainingWh`, 'Forecast today remaining', normalized.summary.todayRemainingWh, 'Wh', 'value.energy');
+    await this.setNumberStateObject(`${deviceId}.energyforecastSummary.tomorrowWh`, 'Forecast tomorrow', normalized.summary.tomorrowWh, 'Wh', 'value.energy');
+    await this.setNumberStateObject(`${deviceId}.energyforecastSummary.recordCount`, 'Forecast raw record count', normalized.summary.recordCount, '', 'value');
+    await this.setStringStateObject(`${deviceId}.energyforecastSummary.updatedAt`, 'Forecast updated at', normalized.summary.updatedAt);
+    await this.setStringStateObject(`${deviceId}.energyforecastSummary.remainingUpdatedAt`, 'Forecast remaining updated at', normalized.summary.remainingUpdatedAt);
+
+    await this.ensureChannelObject(`${deviceId}.energyforecastToday15m`, 'Energy Forecast Today 15 Minutes');
+    for (const slot of normalized.today15m) {
+      const slotPath = `${deviceId}.energyforecastToday15m.${slot.label}`;
+      await this.ensureChannelObject(slotPath, `Today ${slot.label.replace('_', ':')}`);
+      await this.setNumberStateObject(`${slotPath}.value`, `Today ${slot.label.replace('_', ':')}`, slot.value, 'Wh', 'value.energy');
+    }
+
+    await this.ensureChannelObject(`${deviceId}.energyforecastTomorrowHourly`, 'Energy Forecast Tomorrow Hourly');
+    for (const slot of normalized.tomorrowHourly) {
+      const slotPath = `${deviceId}.energyforecastTomorrowHourly.${slot.label}`;
+      await this.ensureChannelObject(slotPath, `Tomorrow ${slot.label}:00`);
+      await this.setNumberStateObject(`${slotPath}.value`, `Tomorrow ${slot.label}:00`, slot.value, 'Wh', 'value.energy');
+    }
+  }
+
+  async updateEnergyForecastRemainingSummaries() {
+    for (const deviceId of this.deviceArray) {
+      try {
+        const todayDateState = await this.getStateAsync(`${deviceId}.energyforecastSummary.todayDate`);
+        if (!todayDateState || todayDateState.val !== formatLocalDate(new Date())) {
+          continue;
+        }
+
+        const dayStart = getLocalDayStart(new Date(), 0);
+        const todaySlots = [];
+        for (let index = 0; index < 96; index += 1) {
+          const start = new Date(dayStart.getTime() + index * 15 * 60 * 1000);
+          const end = new Date(start.getTime() + 15 * 60 * 1000);
+          const label = `${start.getHours().toString().padStart(2, '0')}_${start.getMinutes().toString().padStart(2, '0')}`;
+          const valueState = await this.getStateAsync(`${deviceId}.energyforecastToday15m.${label}.value`);
+          const value = Number(valueState && valueState.val);
+          todaySlots.push({
+            start,
+            end,
+            value: Number.isFinite(value) ? value : 0,
+          });
+        }
+
+        const now = new Date();
+        const remainingWh = calculateTodayRemainingFromSlots(todaySlots, now);
+        await this.setStateAsync(`${deviceId}.todayRemainingWh`, Math.round(remainingWh), true);
+        await this.setStateAsync(`${deviceId}.energyforecastSummary.todayRemainingWh`, remainingWh, true);
+        await this.setStateAsync(`${deviceId}.energyforecastSummary.remainingUpdatedAt`, now.toISOString(), true);
+      } catch (error) {
+        this.log.warn(`Could not update remaining energy forecast summary: ${error && error.message ? error.message : error}`);
+      }
+    }
+  }
+
   async refreshToken() {
     if (!this.session) {
       this.log.error('No session found relogin');
@@ -428,6 +564,7 @@ class FroniusSolarweb extends utils.Adapter {
       this.refreshTokenTimeout && clearTimeout(this.refreshTokenTimeout);
       this.updateInterval && clearInterval(this.updateInterval);
       this.refreshTokenInterval && clearInterval(this.refreshTokenInterval);
+      this.remainingForecastInterval && clearInterval(this.remainingForecastInterval);
       callback();
     } catch (e) {
       this.log.error('Error onUnload: ' + e);

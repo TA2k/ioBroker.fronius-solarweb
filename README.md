@@ -20,6 +20,26 @@ Adapter for Fronius Solarweb Portal
 
 Die solarWeb Mail und Passwort eingeben.
 
+## Energy-Forecast
+
+Wenn für die Solar.web-Anlage die Energy-Forecast-/Pro-Daten verfügbar sind, liest der Adapter den aktuellen und den nächsten lokalen Kalendertag aus:
+
+- `energyforecast`: Rohdaten für den heutigen lokalen Kalendertag.
+- `energyforecastTomorrow`: Rohdaten für den morgigen lokalen Kalendertag.
+
+Da Fronius je nach Zeitpunkt unterschiedliche Granularitäten liefert, erzeugt der Adapter zusätzlich stabile, normalisierte Datenpunkte:
+
+- `energyforecastToday15m.*.value`: 96 feste 15-Minuten-Slots für heute.
+- `energyforecastTomorrowHourly.*.value`: 24 feste Stunden-Slots für morgen.
+- `energyforecastSummary.todayWh`: Summe der heutigen Prognose in Wh.
+- `energyforecastSummary.todayRemainingWh`: verbleibende Prognose für heute in Wh. Dieser Wert wird minütlich aus den stabilen 15-Minuten-Slots aktualisiert und berücksichtigt den angebrochenen aktuellen Slot anteilig.
+- `energyforecastSummary.tomorrowWh`: Summe der morgigen Prognose in Wh.
+- `energyforecastSummary.recordCount`: Anzahl der zuletzt gelesenen Rohdatensätze für heute und morgen.
+
+Die vorhandenen kompakten Summary-States `todayWh`, `todayRemainingWh` und `tomorrowWh` bleiben zusätzlich erhalten. `todayRemainingWh` wird ebenfalls minütlich aktualisiert.
+
+Beim Aktualisieren der Rohdaten markiert der Adapter außerdem Index-Objekte aus vorherigen, längeren Forecast-Antworten als veraltet. Dafür werden pro Rohdatenzeile Metadaten wie `valid`, `stale`, `lastSeenInResponseAt` und `staleSince` gepflegt. Die Rohdatenobjekte werden nicht gelöscht, damit vorhandene ioBroker-Custom-Settings, z. B. History-/SQL-Konfigurationen, erhalten bleiben.
+
 ## Diskussion und Fragen
 
 <https://forum.iobroker.net/topic/51550/test-adapter-fronius-solarweb>
