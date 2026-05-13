@@ -1,29 +1,39 @@
 'use strict';
 
-/**
- * This is a dummy TypeScript test file using chai and mocha
- *
- * It's automatically excluded from npm and its build output is excluded from both git and npm.
- * It is advised to test all your modules with accompanying *.test.js-files
- */
+const assert = require('assert');
+const { getQueryTimeRanges } = require('./lib/queryTimeRanges');
 
-// tslint:disable:no-unused-expression
-
-const { expect } = require('chai');
-// import { functionToTest } from "./moduleToTest";
-
-describe('module to test => function to test', () => {
-  // initializing logic
-  const expected = 5;
-
-  it(`should return ${expected}`, () => {
-    const result = 5;
-    // assign result a value from functionToTest
-    expect(result).to.equal(expected);
-    // or using the should() syntax
-    result.should.equal(expected);
+describe('getQueryTimeRanges', () => {
+  it('returns historyDate in YYYY-MM-DD format', () => {
+    const now = new Date(2026, 4, 13, 14, 30, 0);
+    const ranges = getQueryTimeRanges(now);
+    assert.strictEqual(ranges.historyDate, '2026-05-13');
   });
-  // ... more tests => it
-});
 
-// ... more test suites => describe
+  it('returns forecastTodayFrom as start of day in ISO local format', () => {
+    const now = new Date(2026, 4, 13, 14, 30, 0);
+    const ranges = getQueryTimeRanges(now);
+    assert.strictEqual(ranges.forecastTodayFrom, '2026-05-13T00:00:00');
+  });
+
+  it('returns forecastTodayTo as end of day (23:59:59)', () => {
+    const now = new Date(2026, 4, 13, 14, 30, 0);
+    const ranges = getQueryTimeRanges(now);
+    assert.strictEqual(ranges.forecastTodayTo, '2026-05-13T23:59:59');
+  });
+
+  it('returns forecastTomorrowFrom/To for the next calendar day', () => {
+    const now = new Date(2026, 4, 13, 23, 55, 0);
+    const ranges = getQueryTimeRanges(now);
+    assert.strictEqual(ranges.forecastTomorrowFrom, '2026-05-14T00:00:00');
+    assert.strictEqual(ranges.forecastTomorrowTo, '2026-05-14T23:59:59');
+  });
+
+  it('handles month boundary correctly', () => {
+    const now = new Date(2026, 0, 31, 10, 0, 0);
+    const ranges = getQueryTimeRanges(now);
+    assert.strictEqual(ranges.historyDate, '2026-01-31');
+    assert.strictEqual(ranges.forecastTomorrowFrom, '2026-02-01T00:00:00');
+    assert.strictEqual(ranges.forecastTomorrowTo, '2026-02-01T23:59:59');
+  });
+});

@@ -9,6 +9,7 @@
 const utils = require('@iobroker/adapter-core');
 const axios = require('axios');
 const Json2iob = require('json2iob');
+const { getQueryTimeRanges } = require('./lib/queryTimeRanges');
 
 class FroniusSolarweb extends utils.Adapter {
   /**
@@ -194,7 +195,7 @@ class FroniusSolarweb extends utils.Adapter {
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const toDate = new Date(date.getTime() + 5000 - 24 * 60 * 60 * 1000);
+    const ranges = getQueryTimeRanges(date);
     const statusArray = [
       {
         path: 'flowdata',
@@ -202,15 +203,20 @@ class FroniusSolarweb extends utils.Adapter {
         desc: 'Flowdata',
       },
       {
-        path: 'histdata',
-        url: 'https://swqapi.solarweb.com/pvsystems/$id/histdata?from=' + toDate.getTime() + '&to=' + Date.now(),
+        path: 'history',
+        url: 'https://swqapi.solarweb.com/pvsystems/$id/history?date=' + ranges.historyDate,
         desc: 'Historical Data',
-        forceIndex: true,
       },
       {
         path: 'weather',
         url: 'https://swqapi.solarweb.com/pvsystems/$id/weather/current',
         desc: 'Weather',
+      },
+      {
+        path: 'weatherforecast',
+        url: 'https://swqapi.solarweb.com/pvsystems/$id/weather/forecast',
+        desc: 'Weather Forecast',
+        forceIndex: true,
       },
       {
         path: 'livedata',
@@ -253,8 +259,24 @@ class FroniusSolarweb extends utils.Adapter {
     if (this.isPro) {
       statusArray.push({
         path: 'energyforecast',
-        url: 'https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=' + toDate.getTime() + '&to=' + Date.now(),
-        desc: 'Energy Forecast',
+        url:
+          'https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=' +
+          ranges.forecastTodayFrom +
+          '&to=' +
+          ranges.forecastTodayTo +
+          '&timezone=local',
+        desc: 'Energy Forecast Today',
+        forceIndex: true,
+      });
+      statusArray.push({
+        path: 'energyforecastTomorrow',
+        url:
+          'https://swqapi.solarweb.com/pvsystems/$id/weather/energyforecast?from=' +
+          ranges.forecastTomorrowFrom +
+          '&to=' +
+          ranges.forecastTomorrowTo +
+          '&timezone=local',
+        desc: 'Energy Forecast Tomorrow',
         forceIndex: true,
       });
     }
