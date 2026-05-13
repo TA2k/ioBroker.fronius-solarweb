@@ -267,6 +267,8 @@ class FroniusSolarweb extends utils.Adapter {
           '&timezone=local',
         desc: 'Energy Forecast Today',
         forceIndex: true,
+        deleteBeforeUpdate: true,
+        summaryState: 'todayWh',
       });
       statusArray.push({
         path: 'energyforecastTomorrow',
@@ -278,6 +280,8 @@ class FroniusSolarweb extends utils.Adapter {
           '&timezone=local',
         desc: 'Energy Forecast Tomorrow',
         forceIndex: true,
+        deleteBeforeUpdate: true,
+        summaryState: 'tomorrowWh',
       });
     }
 
@@ -299,14 +303,38 @@ class FroniusSolarweb extends utils.Adapter {
             }
             const data = res.data.data;
 
-            const forceIndex = element.forceIndex;
-            const preferedArrayName = 'channelName';
-
             await this.json2iob.parse(id + '.' + element.path, data, {
-              forceIndex: forceIndex,
-              preferedArrayName: preferedArrayName,
+              forceIndex: element.forceIndex,
+              preferedArrayName: 'channelName',
               channelName: element.desc,
+              deleteBeforeUpdate: element.deleteBeforeUpdate,
             });
+
+            if (element.summaryState && Array.isArray(data)) {
+              let sum = 0;
+              for (const entry of data) {
+                if (Array.isArray(entry.channels)) {
+                  for (const ch of entry.channels) {
+                    if (ch.channelName === 'EnergyExpected' && typeof ch.value === 'number') {
+                      sum += ch.value;
+                    }
+                  }
+                }
+              }
+              await this.setObjectNotExistsAsync(id + '.' + element.summaryState, {
+                type: 'state',
+                common: {
+                  name: element.desc + ' Total',
+                  type: 'number',
+                  role: 'value.energy',
+                  unit: 'Wh',
+                  read: true,
+                  write: false,
+                },
+                native: {},
+              });
+              await this.setStateAsync(id + '.' + element.summaryState, Math.round(sum), true);
+            }
           })
           .catch((error) => {
             if (error.response) {
