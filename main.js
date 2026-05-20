@@ -267,7 +267,7 @@ class FroniusSolarweb extends utils.Adapter {
           '&timezone=local',
         desc: 'Energy Forecast Today',
         forceIndex: true,
-        deleteBeforeUpdate: true,
+        cleanupTail: true,
         summaryState: 'todayWh',
         remainingState: 'todayRemainingWh',
       });
@@ -281,7 +281,7 @@ class FroniusSolarweb extends utils.Adapter {
           '&timezone=local',
         desc: 'Energy Forecast Tomorrow',
         forceIndex: true,
-        deleteBeforeUpdate: true,
+        cleanupTail: true,
         summaryState: 'tomorrowWh',
       });
     }
@@ -308,8 +308,11 @@ class FroniusSolarweb extends utils.Adapter {
               forceIndex: element.forceIndex,
               preferedArrayName: 'channelName',
               channelName: element.desc,
-              deleteBeforeUpdate: element.deleteBeforeUpdate,
             });
+
+            if (element.cleanupTail && Array.isArray(data)) {
+              await this.cleanupForecastTail(id + '.' + element.path, data.length);
+            }
 
             if (element.summaryState && Array.isArray(data)) {
               let sum = 0;
@@ -320,11 +323,17 @@ class FroniusSolarweb extends utils.Adapter {
                 for (const ch of entry.channels) {
                   if (ch.channelName !== 'EnergyExpected' || typeof ch.value !== 'number') continue;
                   sum += ch.value;
-                  if (element.remainingState && entry.logDateTime) {
-                    const slotEnd = new Date(entry.logDateTime);
-                    slotEnd.setSeconds(slotEnd.getSeconds() + (entry.logDuration || 0));
+                  if (element.remainingState && entry.logDateTime && entry.logDuration) {
+                    const slotStart = new Date(entry.logDateTime);
+                    const slotEnd = new Date(slotStart.getTime() + entry.logDuration * 1000);
                     if (slotEnd > now) {
-                      remaining += ch.value;
+                      if (slotStart >= now) {
+                        remaining += ch.value;
+                      } else {
+                        const remainingMs = slotEnd.getTime() - now.getTime();
+                        const totalMs = slotEnd.getTime() - slotStart.getTime();
+                        remaining += ch.value * (remainingMs / totalMs);
+                      }
                     }
                   }
                 }
@@ -387,6 +396,39 @@ class FroniusSolarweb extends utils.Adapter {
       }
     }
   }
+
+  async cleanupForecastTail(basePath, currentLength) {
+    try {
+      const prefix = `${this.namespace}.${basePath}.`;
+      const list = await this.getObjectListAsync({
+        startkey: prefix,
+        endkey: `${prefix}香`,
+      });
+      const orphans = new Set();
+      for (const row of (list && list.rows) || []) {
+        const objId = row.id || '';
+        if (!objId.startsWith(prefix)) continue;
+        const match = objId.slice(prefix.length).match(/^(\d+)(?:\.|$)/);
+        if (match && Number(match[1]) >= currentLength) {
+          orphans.add(`${basePath}.${match[1]}`);
+        }
+      }
+      for (const orphan of orphans) {
+        await this.delObjectAsync(orphan, { recursive: true });
+        const cache = this.json2iob['alreadyCreatedObjects'];
+        if (cache) {
+          for (const key of Object.keys(cache)) {
+            if (key === orphan || key.startsWith(`${orphan}.`)) {
+              delete cache[key];
+            }
+          }
+        }
+      }
+    } catch (error) {
+      this.log.warn(`cleanupForecastTail ${basePath} failed: ${(error && error.message) || error}`);
+    }
+  }
+
   async refreshToken() {
     if (!this.session) {
       this.log.error('No session found relogin');
