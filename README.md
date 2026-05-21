@@ -25,6 +25,10 @@ Die solarWeb Mail und Passwort eingeben.
 <https://forum.iobroker.net/topic/51550/test-adapter-fronius-solarweb>
 
 ## Changelog
+
+### **WORK IN PROGRESS**
+- (ioBroker-Bot) Adapter requires js-controller >= 6.0.11 now.
+
 ### 0.1.1 (2025-03-12)
 
 - fix for login flow
