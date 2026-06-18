@@ -237,11 +237,15 @@ class FroniusSolarweb extends utils.Adapter {
         path: 'year',
         url: 'https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/' + year,
         desc: 'AggData Year',
+        summaryState: 'currentYearWh',
+        summaryChannel: 'EnergyProductionTotal',
       },
       {
         path: 'month',
         url: 'https://swqapi.solarweb.com/pvsystems/$id/aggdata/years/' + year + '/months/' + month,
         desc: 'AggData Month',
+        summaryState: 'currentMonthWh',
+        summaryChannel: 'EnergyProductionTotal',
       },
       {
         path: 'day',
@@ -269,6 +273,7 @@ class FroniusSolarweb extends utils.Adapter {
         forceIndex: true,
         cleanupTail: true,
         summaryState: 'todayWh',
+        summaryChannel: 'EnergyExpected',
         remainingState: 'todayRemainingWh',
       });
       statusArray.push({
@@ -283,6 +288,7 @@ class FroniusSolarweb extends utils.Adapter {
         forceIndex: true,
         cleanupTail: true,
         summaryState: 'tomorrowWh',
+        summaryChannel: 'EnergyExpected',
       });
     }
 
@@ -314,14 +320,18 @@ class FroniusSolarweb extends utils.Adapter {
               await this.cleanupForecastTail(id + '.' + element.path, data.length);
             }
 
-            if (element.summaryState && Array.isArray(data)) {
+            if (element.summaryState && data) {
+              const entries = Array.isArray(data) ? data : [data];
+              const channelName = element.summaryChannel;
               let sum = 0;
               let remaining = 0;
+              let matched = false;
               const now = new Date();
-              for (const entry of data) {
-                if (!Array.isArray(entry.channels)) continue;
+              for (const entry of entries) {
+                if (!entry || !Array.isArray(entry.channels)) continue;
                 for (const ch of entry.channels) {
-                  if (ch.channelName !== 'EnergyExpected' || typeof ch.value !== 'number') continue;
+                  if (ch.channelName !== channelName || typeof ch.value !== 'number') continue;
+                  matched = true;
                   sum += ch.value;
                   if (element.remainingState && entry.logDateTime && entry.logDuration) {
                     const slotStart = new Date(entry.logDateTime);
@@ -337,6 +347,9 @@ class FroniusSolarweb extends utils.Adapter {
                     }
                   }
                 }
+              }
+              if (!matched) {
+                return;
               }
               await this.setObjectNotExistsAsync(id + '.' + element.summaryState, {
                 type: 'state',
