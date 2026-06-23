@@ -9,6 +9,7 @@
   "homepage": "https://github.com/TA2k/ioBroker.fronius-solarweb",
   "license": "MIT",
   "keywords": [
+    "ioBroker",
     "fronius",
     "solarweb"
   ],
