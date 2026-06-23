@@ -50,4 +50,16 @@ systemDictionary = {
         pl: "Interwał aktualizacji (w minutach)",
         "zh-cn": "更新间隔（分钟）",
     },
+    "History entries to keep (0 = all)": {
+        en: "History entries to keep (0 = all)",
+        de: "Anzahl zu speichernder History-Einträge (0 = alle)",
+        ru: "Сохранять записей истории (0 = все)",
+        pt: "Entradas de histórico a manter (0 = todas)",
+        nl: "Aantal te bewaren history-items (0 = alle)",
+        fr: "Entrées d'historique à conserver (0 = toutes)",
+        it: "Voci di cronologia da conservare (0 = tutte)",
+        es: "Entradas de historial a conservar (0 = todas)",
+        pl: "Liczba pozycji historii do zachowania (0 = wszystkie)",
+        "zh-cn": "保留的历史条目数（0 = 全部）",
+    },
 };

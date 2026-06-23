@@ -53,6 +53,8 @@ class FroniusSolarweb extends utils.Adapter {
       this.log.info('Set interval to minimum 0.5');
       this.config.interval = 0.5;
     }
+    const limit = Number(this.config.historyLimit);
+    this.config.historyLimit = Number.isFinite(limit) && limit >= 0 ? Math.floor(limit) : 20;
     if (!this.config.username || !this.config.password) {
       this.log.error('Please set username and password in the instance settings');
       return;
@@ -206,6 +208,9 @@ class FroniusSolarweb extends utils.Adapter {
         path: 'history',
         url: 'https://swqapi.solarweb.com/pvsystems/$id/history?date=' + ranges.historyDate,
         desc: 'Historical Data',
+        forceIndex: true,
+        cleanupTail: true,
+        sliceLast: Number(this.config.historyLimit) || 0,
       },
       {
         path: 'weather',
@@ -308,7 +313,10 @@ class FroniusSolarweb extends utils.Adapter {
             if (!res.data) {
               return;
             }
-            const data = res.data.data;
+            let data = res.data.data;
+            if (element.sliceLast && Array.isArray(data) && data.length > element.sliceLast) {
+              data = data.slice(-element.sliceLast);
+            }
 
             await this.json2iob.parse(id + '.' + element.path, data, {
               forceIndex: element.forceIndex,
