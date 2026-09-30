@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "fronius-solarweb",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "news": {
+      "0.2.0": {
+        "en": "align API endpoints with Fronius Solar.web APK v3.3.0; add forecast summary states and historyLimit config",
+        "de": "API-Endpunkte an Fronius Solar.web APK v3.3.0 angeglichen; Prognose-Summenstatus und historyLimit-Konfiguration hinzugefügt",
+        "ru": "приведение конечных точек API в соответствие с Fronius Solar.web APK v3.3.0; добавлены сводные состояния прогноза и настройка historyLimit",
+        "pt": "alinhar endpoints da API com o Fronius Solar.web APK v3.3.0; adicionar estados de resumo de previsão e configuração historyLimit",
+        "nl": "API-eindpunten afgestemd op Fronius Solar.web APK v3.3.0; prognose-samenvattingsstatussen en historyLimit-configuratie toegevoegd",
+        "fr": "alignement des points de terminaison API sur Fronius Solar.web APK v3.3.0; ajout des états de synthèse de prévision et de la configuration historyLimit",
+        "it": "allineamento degli endpoint API a Fronius Solar.web APK v3.3.0; aggiunti stati di riepilogo delle previsioni e configurazione historyLimit",
+        "es": "alinear los endpoints de la API con Fronius Solar.web APK v3.3.0; añadir estados de resumen de previsión y configuración historyLimit",
+        "pl": "dostosowanie punktów końcowych API do Fronius Solar.web APK v3.3.0; dodano stany podsumowania prognozy i konfigurację historyLimit",
+        "uk": "приведення кінцевих точок API у відповідність до Fronius Solar.web APK v3.3.0; додано зведені стани прогнозу та налаштування historyLimit",
+        "zh-cn": "使 API 端点与 Fronius Solar.web APK v3.3.0 保持一致；添加预测汇总状态和 historyLimit 配置"
+      },
       "0.1.1": {
         "en": "fix for login flow",
         "de": "fix für login-flow",
@@ -63,13 +76,8 @@
       "pl": "Adapter do portalu Fronius Solarweb",
       "zh-cn": "Fronius Solarweb Portal 适配器"
     },
-    "authors": [
-      "TA2k <tombox2020@gmail.com>"
-    ],
-    "keywords": [
-      "fronius",
-      "solarweb"
-    ],
+    "authors": ["TA2k <tombox2020@gmail.com>"],
+    "keywords": ["fronius", "solarweb"],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -84,6 +92,7 @@
     "connectionType": "cloud",
     "dataSource": "poll",
     "materialize": true,
+    "defaultObjectsWarnLimit": 7000,
     "plugins": {
       "sentry": {
         "dsn": "https://c9bd6c851b1246da95e6e982aa9b88f3@sentry.iobroker.net/152"
@@ -100,17 +109,13 @@
       }
     ]
   },
-  "encryptedNative": [
-    "password"
-  ],
-  "protectedNative": [
-    "password"
-  ],
+  "encryptedNative": ["password"],
+  "protectedNative": ["password"],
   "native": {
     "username": "",
     "password": "",
     "interval": 10,
-    "historyLimit": 20
+    "historyLimit": 15
   },
   "objects": [],
   "instanceObjects": [
