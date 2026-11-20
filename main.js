@@ -25,6 +25,7 @@ class FroniusSolarweb extends utils.Adapter {
     this.on('unload', this.onUnload.bind(this));
     this.deviceArray = [];
     this.ohmePilot = '';
+    this.ohmePilots = {};
     this.isPro = true;
     this.json2iob = new Json2iob(this);
 
@@ -168,6 +169,7 @@ class FroniusSolarweb extends utils.Adapter {
               for (const device of res.data.devices) {
                 if (device && device.deviceType === 'Ohmpilot') {
                   this.ohmePilot = device.deviceId;
+                  this.ohmePilots[id] = device.deviceId;
                 }
                 await this.extendObject(id + '.devices.' + device.deviceId, {
                   type: 'device',
@@ -261,7 +263,7 @@ class FroniusSolarweb extends utils.Adapter {
     if (this.ohmePilot) {
       statusArray.push({
         path: 'ohmpilot',
-        url: 'https://swqapi.solarweb.com/pvsystems/$id/devices/' + this.ohmePilot + '/flowdata',
+        url: 'https://swqapi.solarweb.com/pvsystems/$id/devices/$ohmpilot/flowdata',
         desc: 'OhmPilot flowdata',
       });
     }
@@ -275,6 +277,7 @@ class FroniusSolarweb extends utils.Adapter {
           ranges.forecastTodayTo +
           '&timezone=local',
         desc: 'Energy Forecast Today',
+        pro: true,
         forceIndex: true,
         cleanupTail: true,
         summaryState: 'todayWh',
@@ -290,6 +293,7 @@ class FroniusSolarweb extends utils.Adapter {
           ranges.forecastTomorrowTo +
           '&timezone=local',
         desc: 'Energy Forecast Tomorrow',
+        pro: true,
         forceIndex: true,
         cleanupTail: true,
         summaryState: 'tomorrowWh',
@@ -299,7 +303,13 @@ class FroniusSolarweb extends utils.Adapter {
 
     for (const id of this.deviceArray) {
       for (const element of statusArray) {
-        const url = element.url.replace('$id', id);
+        if (element.path === 'ohmpilot' && !this.ohmePilots[id]) {
+          continue;
+        }
+        if (element.pro && !this.isPro) {
+          continue;
+        }
+        const url = element.url.replace('$id', id).replace('$ohmpilot', this.ohmePilots[id] || '');
 
         await this.requestClient({
           method: 'get',
@@ -392,10 +402,11 @@ class FroniusSolarweb extends utils.Adapter {
           .catch((error) => {
             if (error.response) {
               if (error.response.status === 403) {
+                if (this.isPro) {
+                  this.log.info('Disable Pro Endpoints (not a Pro PV system)');
+                }
                 this.isPro = false;
-                this.log.info('Disable Pro Endpoints');
-
-                error.response && this.log.info(JSON.stringify(error.response.data));
+                this.log.debug(JSON.stringify(error.response.data));
                 return;
               }
               if (error.response.status === 401) {
